@@ -5,6 +5,10 @@ on:
   # 手動 Dispatch
   workflow_dispatch:
 
+# 賦予寫入權限以建立 Release 與上傳檔案
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -40,7 +44,7 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}          # 使用現在的 tag
+          tag_name: ${{ github.ref_name }}          # 使用現在的 tag 或分支名
           name: Prerelease - ${{ github.ref_name }}
           body: |
             自動重新打包的 ZIP，內含已正規化的 UTF‑8 檔名。
