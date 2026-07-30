@@ -1,4 +1,4 @@
-name: Repackage JAR → UTF‑8 ZIP (prerelease)
+name: Repackage JAR to UTF-8 ZIP (prerelease)
 
 on:
   workflow_dispatch:
@@ -25,28 +25,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract JAR with UTF‑8 filenames
+      - name: Extract JAR with UTF-8 filenames
         run: |
           mkdir -p jarlayer
-          # -O utf-8 確保將 ZIP 內的檔名正規化轉為 UTF-8
           unzip -O utf-8 misaka-1.21.4-0.7.1_crk.jar -d jarlayer
 
-      - name: Re‑zip as UTF‑8 ZIP
+      - name: Re-zip as UTF-8 ZIP
         run: |
           ZIP_NAME="misaka-1.21.4-0.7.1_crk-repacked.zip"
-          # 進入資料夾壓縮以維持原本的目錄層級結構
           cd jarlayer
           zip -r -q "../$ZIP_NAME" .
           cd ..
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
-      - name: Create Prerelease & Upload Asset
+      - name: Create Prerelease and Upload Asset
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag_name }}
           name: Prerelease - ${{ inputs.tag_name }}
           body: |
-            自動重新打包的 ZIP，內含已正規化的 UTF‑8 檔名。
+            自動重新打包的 ZIP，內含已正規化的 UTF-8 檔名。
           draft: false
           prerelease: true
           files: ${{ env.ZIP_NAME }}
