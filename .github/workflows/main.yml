@@ -1,0 +1,61 @@
+# .github/workflows/repack-jar.yml
+name: Repackage JAR → UTF‑8 ZIP (prerelease)
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        # 確保所有腳本都以 UTF‑8 執行
+        env:
+          LC_ALL: C.UTF-8
+          LANG: C.UTF-8
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java (optional, only if you need java for jar handling)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Extract JAR with UTF‑8 filenames
+        run: |
+          mkdir jarlayer
+          # -O utf-8 會把 zip 內的檔名自動轉成 UTF‑8
+          unzip -O utf-8 misaka-1.21.4-0.7.1_crk.jar -d jarlayer
+
+      - name: Re‑zip as UTF‑8 ZIP
+        run: |
+          ZIP_NAME="misaka-1.21.4-0.7.1_crk-repacked.zip"
+          zip -r -q "$ZIP_NAME" -j jarlayer/   # -j 只保留檔名，不含資料夾路徑
+          echo "ZIP=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Create Prerelease
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}          # 使用現在的 tag
+          name: Prerelease - ${{ github.ref_name }}
+          body: |
+            自動重新打包的 ZIP，內含已正規化的 UTF‑8 檔名。
+          draft: false
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload ZIP to Prerelease
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.ZIP }}
+          asset_name: ${{ env.ZIP }}
+          asset_content_type: application/zip
