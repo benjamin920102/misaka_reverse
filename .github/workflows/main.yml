@@ -1,52 +1,58 @@
-name: Repackage JAR to UTF-8 ZIP (prerelease)
+# .github/workflows/repack-jar.yml
+name: Repackage JAR → UTF‑8 ZIP (prerelease)
 
 on:
+  # 手動 Dispatch
   workflow_dispatch:
-    inputs:
-      tag_name:
-        description: 'Release Tag 名稱 (例如 v1.0.0)'
-        required: false
-        default: 'v1.0.0'
-        type: string
-
-permissions:
-  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        env:
-          LC_ALL: C.UTF-8
-          LANG: C.UTF-8
+    env:
+      LC_ALL: C.UTF-8
+      LANG: C.UTF-8
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract JAR with UTF-8 filenames
+      - name: Set up Java (optional, only if you need java for jar handling)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Extract JAR with UTF‑8 filenames
         run: |
-          mkdir -p jarlayer
+          mkdir jarlayer
+          # -O utf-8 會把 zip 內的檔名自動轉成 UTF‑8
           unzip -O utf-8 misaka-1.21.4-0.7.1_crk.jar -d jarlayer
 
-      - name: Re-zip as UTF-8 ZIP
+      - name: Re‑zip as UTF‑8 ZIP
         run: |
           ZIP_NAME="misaka-1.21.4-0.7.1_crk-repacked.zip"
-          cd jarlayer
-          zip -r -q "../$ZIP_NAME" .
-          cd ..
-          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          zip -r -q "$ZIP_NAME" -j jarlayer/   # -j 只保留檔名，不含資料夾路徑
+          echo "ZIP=$ZIP_NAME" >> $GITHUB_ENV
 
-      - name: Create Prerelease and Upload Asset
+      - name: Create Prerelease
+        id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag_name }}
-          name: Prerelease - ${{ inputs.tag_name }}
+          tag_name: ${{ github.ref_name }}          # 使用現在的 tag
+          name: Prerelease - ${{ github.ref_name }}
           body: |
-            自動重新打包的 ZIP，內含已正規化的 UTF-8 檔名。
+            自動重新打包的 ZIP，內含已正規化的 UTF‑8 檔名。
           draft: false
           prerelease: true
-          files: ${{ env.ZIP_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload ZIP to Prerelease
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ env.ZIP }}
+          asset_name: ${{ env.ZIP }}
+          asset_content_type: application/zip
