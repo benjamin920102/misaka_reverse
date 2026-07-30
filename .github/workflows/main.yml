@@ -31,7 +31,9 @@ jobs:
       - name: Re‑zip as UTF‑8 ZIP
         run: |
           ZIP_NAME="misaka-1.21.4-0.7.1_crk-repacked.zip"
-          zip -r -q "$ZIP_NAME" -j jarlayer/   # -j 只保留檔名，不含資料夾路徑
+          cd jarlayer
+          zip -r -q "../$ZIP_NAME" .
+          cd ..
           echo "ZIP=$ZIP_NAME" >> $GITHUB_ENV
 
       - name: Create Prerelease
